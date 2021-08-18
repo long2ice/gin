@@ -7,7 +7,10 @@
 
 package binding
 
-import "net/http"
+import (
+	"net/http"
+	"strings"
+)
 
 // Content-Type MIME of the most common data formats.
 const (
@@ -95,7 +98,9 @@ func Default(method, contentType string) Binding {
 	if method == http.MethodGet {
 		return Form
 	}
-
+	if strings.Contains(contentType, MIMEMultipartPOSTForm) {
+		return FormMultipart
+	}
 	switch contentType {
 	case MIMEJSON:
 		return JSON
@@ -107,8 +112,6 @@ func Default(method, contentType string) Binding {
 		return MsgPack
 	case MIMEYAML:
 		return YAML
-	case MIMEMultipartPOSTForm:
-		return FormMultipart
 	default: // case MIMEPOSTForm:
 		return Form
 	}
