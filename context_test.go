@@ -23,10 +23,9 @@ import (
 
 	"github.com/gin-contrib/sse"
 	"github.com/gin-gonic/gin/binding"
-	"github.com/golang/protobuf/proto"
-	"github.com/stretchr/testify/assert"
-
 	testdata "github.com/gin-gonic/gin/testdata/protoexample"
+	"github.com/stretchr/testify/assert"
+	"google.golang.org/protobuf/proto"
 )
 
 var _ context.Context = &Context{}
@@ -85,19 +84,6 @@ func TestContextFormFile(t *testing.T) {
 	}
 
 	assert.NoError(t, c.SaveUploadedFile(f, "test"))
-}
-
-func TestContextFormFileFailed(t *testing.T) {
-	buf := new(bytes.Buffer)
-	mw := multipart.NewWriter(buf)
-	mw.Close()
-	c, _ := CreateTestContext(httptest.NewRecorder())
-	c.Request, _ = http.NewRequest("POST", "/", nil)
-	c.Request.Header.Set("Content-Type", mw.FormDataContentType())
-	c.engine.MaxMultipartMemory = 8 << 20
-	f, err := c.FormFile("file")
-	assert.Error(t, err)
-	assert.Nil(t, f)
 }
 
 func TestContextMultipartForm(t *testing.T) {
@@ -234,7 +220,6 @@ func TestContextSetGetValues(t *testing.T) {
 	assert.Exactly(t, c.MustGet("float32").(float32), float32(4.2))
 	assert.Exactly(t, c.MustGet("float64").(float64), 4.2)
 	assert.Exactly(t, c.MustGet("intInterface").(int), 1)
-
 }
 
 func TestContextGetString(t *testing.T) {
@@ -300,7 +285,7 @@ func TestContextGetStringSlice(t *testing.T) {
 
 func TestContextGetStringMap(t *testing.T) {
 	c, _ := CreateTestContext(httptest.NewRecorder())
-	var m = make(map[string]interface{})
+	m := make(map[string]interface{})
 	m["foo"] = 1
 	c.Set("map", m)
 
@@ -310,7 +295,7 @@ func TestContextGetStringMap(t *testing.T) {
 
 func TestContextGetStringMapString(t *testing.T) {
 	c, _ := CreateTestContext(httptest.NewRecorder())
-	var m = make(map[string]string)
+	m := make(map[string]string)
 	m["foo"] = "bar"
 	c.Set("map", m)
 
@@ -320,7 +305,7 @@ func TestContextGetStringMapString(t *testing.T) {
 
 func TestContextGetStringMapStringSlice(t *testing.T) {
 	c, _ := CreateTestContext(httptest.NewRecorder())
-	var m = make(map[string][]string)
+	m := make(map[string][]string)
 	m["foo"] = []string{"foo"}
 	c.Set("map", m)
 
@@ -369,15 +354,12 @@ func TestContextHandlerNames(t *testing.T) {
 }
 
 func handlerNameTest(c *Context) {
-
 }
 
 func handlerNameTest2(c *Context) {
-
 }
 
 var handlerTest HandlerFunc = func(c *Context) {
-
 }
 
 func TestContextHandler(t *testing.T) {
@@ -659,8 +641,7 @@ func TestContextBodyAllowedForStatus(t *testing.T) {
 	assert.True(t, true, bodyAllowedForStatus(http.StatusInternalServerError))
 }
 
-type TestPanicRender struct {
-}
+type TestPanicRender struct{}
 
 func (*TestPanicRender) Render(http.ResponseWriter) error {
 	return errors.New("TestPanicRender")
@@ -1329,7 +1310,7 @@ func TestContextAbortWithStatusJSON(t *testing.T) {
 	_, err := buf.ReadFrom(w.Body)
 	assert.NoError(t, err)
 	jsonStringBody := buf.String()
-	assert.Equal(t, fmt.Sprint("{\"foo\":\"fooValue\",\"bar\":\"barValue\"}"), jsonStringBody)
+	assert.Equal(t, "{\"foo\":\"fooValue\",\"bar\":\"barValue\"}", jsonStringBody)
 }
 
 func TestContextError(t *testing.T) {
@@ -1545,6 +1526,7 @@ func TestContextBindWithJSON(t *testing.T) {
 	assert.Equal(t, "bar", obj.Foo)
 	assert.Equal(t, 0, w.Body.Len())
 }
+
 func TestContextBindWithXML(t *testing.T) {
 	w := httptest.NewRecorder()
 	c, _ := CreateTestContext(w)
@@ -2100,6 +2082,8 @@ func TestContextWithFallbackErrFromRequestContext(t *testing.T) {
 	assert.EqualError(t, c2.Err(), context.Canceled.Error())
 }
 
+type contextKey string
+
 func TestContextWithFallbackValueFromRequestContext(t *testing.T) {
 	tests := []struct {
 		name             string
@@ -2122,8 +2106,8 @@ func TestContextWithFallbackValueFromRequestContext(t *testing.T) {
 			getContextAndKey: func() (*Context, interface{}) {
 				c := &Context{}
 				c.Request, _ = http.NewRequest("POST", "/", nil)
-				c.Request = c.Request.WithContext(context.WithValue(context.TODO(), "key", "value"))
-				return c, "key"
+				c.Request = c.Request.WithContext(context.WithValue(context.TODO(), contextKey("key"), "value"))
+				return c, contextKey("key")
 			},
 			value: "value",
 		},
@@ -2151,4 +2135,15 @@ func TestContextWithFallbackValueFromRequestContext(t *testing.T) {
 			assert.Equal(t, tt.value, c.Value(key))
 		})
 	}
+}
+
+func TestContextAddParam(t *testing.T) {
+	c := &Context{}
+	id := "id"
+	value := "1"
+	c.AddParam(id, value)
+
+	v, ok := c.Params.Get(id)
+	assert.Equal(t, ok, true)
+	assert.Equal(t, value, v)
 }
